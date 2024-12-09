@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>銀行與信用卡管理</title>
+    <style>
+        /* 設定基礎樣式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        /* 表單欄位樣式 */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        select, input, button {
+            width: 100%;
+            padding: 12px;
+            margin: 5px 0;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        /* 隱藏選項區塊 */
+        #details-section {
+            margin-top: 20px;
+        }
+
+        #bank-details, #credit-details {
+            display: none;
+        }
+
+        .operations, .account-info, .transaction-log {
+            margin-top: 20px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-buttons {
+            margin-top: 10px;
+            text-align: right;
+        }
+
+        .action-buttons button {
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* 響應式設計調整 */
+        @media (max-width: 768px) {
+            body {
+                margin: 10px;
+            }
+
+            button {
+                font-size: 14px;
+            }
+
+            .form-group {
+                margin-bottom: 12px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            h2 {
+                font-size: 20px;
+            }
+
+            .operations, .account-info, .transaction-log {
+                margin-top: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>銀行與信用卡管理</h1>
+    <div id="form-section">
+        <div class="form-group">
+            <label for="type-selector">選擇類型</label>
+            <select id="type-selector">
+                <option value="">-- 請選擇 --</option>
+                <option value="bank">銀行帳戶</option>
+                <option value="credit">信用卡</option>
+            </select>
+        </div>
+
+        <div id="details-section">
+            <div id="bank-details">
+                <div class="form-group">
+                    <label for="bank-name">銀行名稱</label>
+                    <input type="text" id="bank-name" placeholder="輸入銀行名稱">
+                </div>
+                <div class="form-group">
+                    <label for="bank-balance">目前餘額</label>
+                    <input type="number" id="bank-balance" placeholder="輸入目前餘額">
+                </div>
+                <div class="form-group">
+                    <label for="bank-free-transfers">免費轉帳次數</label>
+                    <input type="number" id="bank-free-transfers" placeholder="輸入免費轉帳次數">
+                </div>
+                <button onclick="addBankAccount()">新增銀行帳戶</button>
+            </div>
+
+            <div id="credit-details">
+                <div class="form-group">
+                    <label for="credit-name">信用卡名稱</label>
+                    <input type="text" id="credit-name" placeholder="輸入信用卡名稱">
+                </div>
+                <div class="form-group">
+                    <label for="credit-balance">目前餘額</label>
+                    <input type="number" id="credit-balance" placeholder="輸入目前餘額">
+                </div>
+                <div class="form-group">
+                    <label for="credit-free-transfers">免費轉帳次數</label>
+                    <input type="number" id="credit-free-transfers" placeholder="輸入免費轉帳次數">
+                </div>
+                <div class="form-group">
+                    <label for="credit-deduction-date">每月扣款日</label>
+                    <input type="number" id="credit-deduction-date" placeholder="輸入每月扣款日 (1-31)">
+                </div>
+                <button onclick="addCreditCard()">新增信用卡</button>
+            </div>
+        </div>
+    </div>
+
+    <h2>帳戶與信用卡操作</h2>
+    <div class="operations">
+        <div class="form-group">
+            <label for="operation-account">選擇帳戶</label>
+            <select id="operation-account">
+                <option value="">-- 請選擇 --</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="operation-type">操作類型</label>
+            <select id="operation-type">
+                <option value="">-- 請選擇 --</option>
+                <option value="income">收入</option>
+                <option value="expense">支出</option>
+                <option value="transfer">轉帳</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="operation-amount">金額</label>
+            <input type="number" id="operation-amount" placeholder="輸入金額">
+        </div>
+        <button onclick="performOperation()">執行</button>
+    </div>
+
+    <h2>帳戶資訊</h2>
+    <div class="account-info" id="account-info">
+        <p>目前無任何帳戶資訊。</p>
+    </div>
+
+    <h2>操作紀錄</h2>
+    <div class="transaction-log" id="transaction-log">
+        <p>目前無操作紀錄。</p>
+    </div>
+
+    <script>
+        const typeSelector = document.getElementById('type-selector');
+        const detailsSection = document.getElementById('details-section');
+        const bankDetails = document.getElementById('bank-details');
+        const creditDetails = document.getElementById('credit-details');
+        const operationAccount = document.getElementById('operation-account');
+        const accountInfo = document.getElementById('account-info');
+        const transactionLog = document.getElementById('transaction-log');
+
+        let accounts = JSON.parse(localStorage.getItem('accounts')) || [];
+
+        // 初始化帳戶資料和操作紀錄
+        updateAccountInfo();
+        updateTransactionLog();
+        updateOperationAccountOptions();
+
+        typeSelector.addEventListener('change', () => {
+            detailsSection.style.display = 'block';
+            if (typeSelector.value === 'bank') {
+                bankDetails.style.display = 'block';
+                creditDetails.style.display = 'none';
+            } else if (typeSelector.value === 'credit') {
+                bankDetails.style.display = 'none';
+                creditDetails.style.display = 'block';
+            } else {
+                detailsSection.style.display = 'none';
+            }
+        });
+
+        function updateAccountInfo() {
+            if (accounts.length === 0) {
+                accountInfo.innerHTML = '<p>目前無任何帳戶資訊。</p>';
+            } else {
+                accountInfo.innerHTML = accounts.map(account => {
+                    return `<p>${account.type === 'bank' ? '銀行帳戶' : '信用卡'}: ${account.name}, 餘額: ${account.balance}, 免費轉帳次數: ${account.freeTransfers}, ${account.type === 'credit' ? '扣款日: ' + account.deductionDate : ''}
+                    <span class="action-buttons">
+                        <button onclick="editAccount('${account.type}-${account.name}')">編輯</button>
+                        <button onclick="deleteAccount('${account.type}-${account.name}')">刪除</button>
+                    </span></p>`;
+                }).join('');
+            }
+            // 保存到 localStorage
+            localStorage.setItem('accounts', JSON.stringify(accounts));
+        }
+
+        function updateTransactionLog() {
+            if (accounts.length === 0) {
+                transactionLog.innerHTML = '<p>目前無操作紀錄。</p>';
+            } else {
+                let logs = [];
+                accounts.forEach(account => {
+                    if (account.transactions) {
+                        account.transactions.forEach((transaction, index) => {
+                            logs.push(`<p>${account.name} - ${transaction.type}: ${transaction.amount}
+                                <span class="action-buttons">
+                                    <button onclick="editTransaction('${account.type}-${account.name}', ${index})">編輯</button>
+                                    <button onclick="deleteTransaction('${account.type}-${account.name}', ${index})">刪除</button>
+                                </span>
+                            </p>`);
+                        });
+                    }
+                });
+                transactionLog.innerHTML = logs.join('');
+            }
+        }
+
+        function updateOperationAccountOptions() {
+            // 更新操作選單中的帳戶選項
+            const accountSelect = document.getElementById('operation-account');
+            accountSelect.innerHTML = '<option value="">-- 請選擇 --</option>';
+            accounts.forEach(account => {
+                const option = document.createElement('option');
+                option.value = `${account.type}-${account.name}`;
+                option.textContent = `${account.name} (餘額: ${account.balance}, 免費轉帳: ${account.freeTransfers})`;
+                accountSelect.appendChild(option);
+            });
+        }
+
+        function addBankAccount() {
+            const name = document.getElementById('bank-name').value;
+            const balance = parseFloat(document.getElementById('bank-balance').value);
+            const freeTransfers = parseInt(document.getElementById('bank-free-transfers').value, 10);
+
+            if (name && !isNaN(balance) && !isNaN(freeTransfers)) {
+                const account = { type: 'bank', name, balance, freeTransfers, transactions: [] };
+                accounts.push(account);
+                updateAccountInfo();   // 更新帳戶資訊
+                updateOperationAccountOptions(); // 更新操作選單
+                alert('已成功新增銀行帳戶！');
+            } else {
+                alert('請填寫所有銀行帳戶欄位。');
+            }
+        }
+
+        function addCreditCard() {
+            const name = document.getElementById('credit-name').value;
+            const balance = parseFloat(document.getElementById('credit-balance').value);
+            const freeTransfers = parseInt(document.getElementById('credit-free-transfers').value, 10);
+            const deductionDate = parseInt(document.getElementById('credit-deduction-date').value, 10);
+
+            if (name && !isNaN(balance) && !isNaN(freeTransfers) && !isNaN(deductionDate)) {
+                const account = { type: 'credit', name, balance, freeTransfers, deductionDate, transactions: [] };
+                accounts.push(account);
+                updateAccountInfo();   // 更新帳戶資訊
+                updateOperationAccountOptions(); // 更新操作選單
+                alert('已成功新增信用卡！');
+            } else {
+                alert('請填寫所有信用卡欄位。');
+            }
+        }
+
+        function editAccount(accountId) {
+            const [type, name] = accountId.split('-');
+            const account = accounts.find(acc => acc.type === type && acc.name === name);
+
+            const newName = prompt('請輸入新的帳戶名稱:', account.name);
+            const newBalance = parseFloat(prompt('請輸入新的餘額:', account.balance));
+            const newFreeTransfers = parseInt(prompt('請輸入新的免費轉帳次數:', account.freeTransfers), 10);
+
+            if (newName && !isNaN(newBalance) && !isNaN(newFreeTransfers)) {
+                account.name = newName;
+                account.balance = newBalance;
+                account.freeTransfers = newFreeTransfers;
+                updateAccountInfo();
+                updateOperationAccountOptions(); // 更新操作選單
+            }
+        }
+
+        function deleteAccount(accountId) {
+            const [type, name] = accountId.split('-');
+            accounts = accounts.filter(acc => acc.type !== type || acc.name !== name);
+            updateAccountInfo();
+            updateTransactionLog();
+            updateOperationAccountOptions(); // 更新操作選單
+        }
+
+        function performOperation() {
+            const selectedAccount = operationAccount.value;
+            const operationType = document.getElementById('operation-type').value;
+            const amount = parseFloat(document.getElementById('operation-amount').value);
+
+            if (selectedAccount && operationType && !isNaN(amount)) {
+                const account = accounts.find(acc => `${acc.type}-${acc.name}` === selectedAccount);
+
+                if (account) {
+                    if (operationType === 'income') {
+                        account.balance += amount;
+                        account.transactions.push({ type: '收入', amount });
+                    } else if (operationType === 'expense') {
+                        account.balance -= amount;
+                        account.transactions.push({ type: '支出', amount: -amount }); // 支出以負數記錄
+                    } else if (operationType === 'transfer') {
+                        if (account.freeTransfers > 0) {
+                            account.freeTransfers -= 1;
+                            account.balance -= amount;
+                            account.transactions.push({ type: '轉帳', amount: -amount }); // 轉帳以負數記錄
+                        } else {
+                            alert('轉帳次數已用盡！');
+                            return;
+                        }
+                    }
+                    updateAccountInfo();
+                    updateTransactionLog();
+                    updateOperationAccountOptions(); // 更新帳戶選單
+                    alert(`操作成功！目前餘額為 ${account.balance}`);
+                }
+            } else {
+                alert('請選擇帳戶、操作類型並輸入有效金額。');
+            }
+        }
+
+        function editTransaction(accountId, transactionIndex) {
+            const [type, name] = accountId.split('-');
+            const account = accounts.find(acc => acc.type === type && acc.name === name);
+            const transaction = account.transactions[transactionIndex];
+
+            const newAmount = parseFloat(prompt('請輸入新的金額:', transaction.amount));
+            if (!isNaN(newAmount)) {
+                const amountDifference = newAmount - transaction.amount;
+                transaction.amount = newAmount;
+                account.balance += amountDifference; // 根據修改金額調整帳戶餘額
+                updateAccountInfo();
+                updateTransactionLog();
+            }
+        }
+
+        function deleteTransaction(accountId, transactionIndex) {
+            const [type, name] = accountId.split('-');
+            const account = accounts.find(acc => acc.type === type && acc.name === name);
+            const transaction = account.transactions[transactionIndex];
+
+            if (transaction.type === '轉帳') {
+                account.freeTransfers += 1; // 恢復轉帳次數
+            }
+
+            account.balance -= transaction.amount; // 根據刪除金額調整帳戶餘額
+            account.transactions.splice(transactionIndex, 1);
+            updateAccountInfo();
+            updateTransactionLog();
+        }
+    </script>
+</body>
+</html>
