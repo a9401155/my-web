@@ -42,6 +42,19 @@
     color: gray;
     margin-left: 10px;
 }
+    .delete-button {
+        background-color: red;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        font-weight: bold;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+
+    .delete-button:hover {
+        background-color: darkred;
+    }
         label {
             display: block;
             margin-bottom: 5px;
@@ -246,33 +259,29 @@ function updateAccountInfo() {
         accountInfo.innerHTML = '<p>目前無任何帳戶資訊。</p>';
     } else {
         accountInfo.innerHTML = accounts.map(account => {
-            const balanceClass = account.balance >= 0 ? 'positive' : 'negative'; // 決定顏色
+            const balanceClass = account.balance >= 0 ? 'positive' : 'negative';
             return `
                 <p>
                     ${account.type === 'bank' ? '銀行帳戶' : '信用卡'}: ${account.name}, 
                     餘額: <span class="${balanceClass}">${account.balance.toFixed(0)}</span>, 
                     免費轉帳次數: ${account.freeTransfers}, 
                     ${account.type === 'credit' ? '扣款日: ' + account.deductionDate : ''}
-                    <span class="action-buttons">
-                        <button onclick="editAccount('${account.type}-${account.name}')">編輯</button>
-                        <button onclick="deleteAccount('${account.type}-${account.name}')">刪除</button>
-                    </span>
-                </p>`;
+                </p>
+                <div class="action-buttons" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button onclick="editAccount('${account.type}-${account.name}')">編輯</button>
+                    <button class="delete-button" onclick="deleteAccount('${account.type}-${account.name}')">刪除</button>
+                </div>`;
         }).join('');
     }
     localStorage.setItem('accounts', JSON.stringify(accounts));
 }
-
-
 function updateTransactionLog() {
     if (accounts.length === 0) {
         transactionLog.innerHTML = '<p>目前無操作紀錄。</p>';
     } else {
         let logs = [];
-
         accounts.forEach(account => {
             if (account.transactions) {
-                // 為每個帳戶的交易紀錄添加帳戶名稱，便於顯示
                 account.transactions.forEach((transaction, index) => {
                     logs.push({
                         accountName: account.name,
@@ -284,10 +293,8 @@ function updateTransactionLog() {
             }
         });
 
-        // 按日期排序（由近至遠）
         logs.sort((a, b) => new Date(b.transaction.date) - new Date(a.transaction.date));
 
-        // 生成 HTML
         transactionLog.innerHTML = logs.map(log => {
             const { accountName, accountType, transaction, index } = log;
             const amountClass = transaction.amount >= 0 ? 'positive' : 'negative';
@@ -296,11 +303,11 @@ function updateTransactionLog() {
                     ${accountName} - ${transaction.type}: 
                     <span class="${amountClass}">${transaction.amount.toFixed(2)}</span>
                     <span class="date">${transaction.date}</span>
-                    <span class="action-buttons">
-                        <button onclick="editTransaction('${accountType}-${accountName}', ${index})">編輯</button>
-                        <button onclick="deleteTransaction('${accountType}-${accountName}', ${index})">刪除</button>
-                    </span>
-                </p>`;
+                </p>
+                <div class="action-buttons" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button onclick="editTransaction('${accountType}-${accountName}', ${index})">編輯</button>
+                    <button class="delete-button" onclick="deleteTransaction('${accountType}-${accountName}', ${index})">刪除</button>
+                </div>`;
         }).join('');
     }
 }
