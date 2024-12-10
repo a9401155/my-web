@@ -12,7 +12,16 @@
             background-color: #f4f4f4;
         }
 
-        h1, h2 {
+        h1 {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.5em;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
             text-align: center;
         }
 
@@ -20,7 +29,14 @@
         .form-group {
             margin-bottom: 15px;
         }
-
+.positive {
+    color: green;
+    font-weight: bold;
+}
+.negative {
+    color: red;
+    font-weight: bold;
+}
         label {
             display: block;
             margin-bottom: 5px;
@@ -38,8 +54,9 @@
         button {
             background-color: #4CAF50;
             color: white;
+            font-weight: bold;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 20px;
         }
 
         button:hover {
@@ -62,7 +79,6 @@
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-
         .action-buttons {
             margin-top: 10px;
             text-align: right;
@@ -70,7 +86,8 @@
 
         .action-buttons button {
             padding: 5px 10px;
-            font-size: 14px;
+            font-weight: bold;
+            font-size: 16px;
             cursor: pointer;
         }
 
@@ -95,7 +112,6 @@
             h2 {
                 font-size: 20px;
             }
-
             .operations, .account-info, .transaction-log {
                 margin-top: 15px;
             }
@@ -104,6 +120,7 @@
 </head>
 <body>
     <h1>銀行與信用卡管理</h1>
+    <h2>新增帳戶與信用卡</h2>
     <div id="form-section">
         <div class="form-group">
             <label for="type-selector">選擇類型</label>
@@ -152,7 +169,6 @@
             </div>
         </div>
     </div>
-
     <h2>帳戶與信用卡操作</h2>
     <div class="operations">
         <div class="form-group">
@@ -216,42 +232,53 @@
             }
         });
 
-        function updateAccountInfo() {
-            if (accounts.length === 0) {
-                accountInfo.innerHTML = '<p>目前無任何帳戶資訊。</p>';
-            } else {
-                accountInfo.innerHTML = accounts.map(account => {
-                    return `<p>${account.type === 'bank' ? '銀行帳戶' : '信用卡'}: ${account.name}, 餘額: ${account.balance}, 免費轉帳次數: ${account.freeTransfers}, ${account.type === 'credit' ? '扣款日: ' + account.deductionDate : ''}
+function updateAccountInfo() {
+    if (accounts.length === 0) {
+        accountInfo.innerHTML = '<p>目前無任何帳戶資訊。</p>';
+    } else {
+        accountInfo.innerHTML = accounts.map(account => {
+            const balanceClass = account.balance >= 0 ? 'positive' : 'negative'; // 決定顏色
+            return `
+                <p>
+                    ${account.type === 'bank' ? '銀行帳戶' : '信用卡'}: ${account.name}, 
+                    餘額: <span class="${balanceClass}">${account.balance.toFixed(0)}</span>, 
+                    免費轉帳次數: ${account.freeTransfers}, 
+                    ${account.type === 'credit' ? '扣款日: ' + account.deductionDate : ''}
                     <span class="action-buttons">
                         <button onclick="editAccount('${account.type}-${account.name}')">編輯</button>
                         <button onclick="deleteAccount('${account.type}-${account.name}')">刪除</button>
-                    </span></p>`;
-                }).join('');
-            }
-            // 保存到 localStorage
-            localStorage.setItem('accounts', JSON.stringify(accounts));
-        }
+                    </span>
+                </p>`;
+        }).join('');
+    }
+    localStorage.setItem('accounts', JSON.stringify(accounts));
+}
 
-        function updateTransactionLog() {
-            if (accounts.length === 0) {
-                transactionLog.innerHTML = '<p>目前無操作紀錄。</p>';
-            } else {
-                let logs = [];
-                accounts.forEach(account => {
-                    if (account.transactions) {
-                        account.transactions.forEach((transaction, index) => {
-                            logs.push(`<p>${account.name} - ${transaction.type}: ${transaction.amount}
-                                <span class="action-buttons">
-                                    <button onclick="editTransaction('${account.type}-${account.name}', ${index})">編輯</button>
-                                    <button onclick="deleteTransaction('${account.type}-${account.name}', ${index})">刪除</button>
-                                </span>
-                            </p>`);
-                        });
-                    }
+
+function updateTransactionLog() {
+    if (accounts.length === 0) {
+        transactionLog.innerHTML = '<p>目前無操作紀錄。</p>';
+    } else {
+        let logs = [];
+        accounts.forEach(account => {
+            if (account.transactions) {
+                account.transactions.forEach((transaction, index) => {
+                    const amountClass = transaction.amount >= 0 ? 'positive' : 'negative'; // 決定顏色
+                    logs.push(`
+                        <p>
+                            ${account.name} - ${transaction.type}: 
+                            <span class="${amountClass}">${transaction.amount.toFixed(0)}</span>
+                            <span class="action-buttons">
+                                <button onclick="editTransaction('${account.type}-${account.name}', ${index})">編輯</button>
+                                <button onclick="deleteTransaction('${account.type}-${account.name}', ${index})">刪除</button>
+                            </span>
+                        </p>`);
                 });
-                transactionLog.innerHTML = logs.join('');
             }
-        }
+        });
+        transactionLog.innerHTML = logs.join('');
+    }
+}
 
         function updateOperationAccountOptions() {
             // 更新操作選單中的帳戶選項
