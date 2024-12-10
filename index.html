@@ -37,6 +37,11 @@
     color: red;
     font-weight: bold;
 }
+.date {
+    font-size: 0.9em;
+    color: gray;
+    margin-left: 10px;
+}
         label {
             display: block;
             margin-bottom: 5px;
@@ -190,6 +195,10 @@
             <label for="operation-amount">金額</label>
             <input type="number" id="operation-amount" placeholder="輸入金額">
         </div>
+<div class="form-group">
+    <label for="operation-date">操作日期</label>
+    <input type="date" id="operation-date">
+</div>
         <button onclick="performOperation()">執行</button>
     </div>
 
@@ -260,26 +269,41 @@ function updateTransactionLog() {
         transactionLog.innerHTML = '<p>目前無操作紀錄。</p>';
     } else {
         let logs = [];
+
         accounts.forEach(account => {
             if (account.transactions) {
+                // 為每個帳戶的交易紀錄添加帳戶名稱，便於顯示
                 account.transactions.forEach((transaction, index) => {
-                    const amountClass = transaction.amount >= 0 ? 'positive' : 'negative'; // 決定顏色
-                    logs.push(`
-                        <p>
-                            ${account.name} - ${transaction.type}: 
-                            <span class="${amountClass}">${transaction.amount.toFixed(0)}</span>
-                            <span class="action-buttons">
-                                <button onclick="editTransaction('${account.type}-${account.name}', ${index})">編輯</button>
-                                <button onclick="deleteTransaction('${account.type}-${account.name}', ${index})">刪除</button>
-                            </span>
-                        </p>`);
+                    logs.push({
+                        accountName: account.name,
+                        accountType: account.type,
+                        transaction,
+                        index,
+                    });
                 });
             }
         });
-        transactionLog.innerHTML = logs.join('');
+
+        // 按日期排序（由近至遠）
+        logs.sort((a, b) => new Date(b.transaction.date) - new Date(a.transaction.date));
+
+        // 生成 HTML
+        transactionLog.innerHTML = logs.map(log => {
+            const { accountName, accountType, transaction, index } = log;
+            const amountClass = transaction.amount >= 0 ? 'positive' : 'negative';
+            return `
+                <p>
+                    ${accountName} - ${transaction.type}: 
+                    <span class="${amountClass}">${transaction.amount.toFixed(2)}</span>
+                    <span class="date">${transaction.date}</span>
+                    <span class="action-buttons">
+                        <button onclick="editTransaction('${accountType}-${accountName}', ${index})">編輯</button>
+                        <button onclick="deleteTransaction('${accountType}-${accountName}', ${index})">刪除</button>
+                    </span>
+                </p>`;
+        }).join('');
     }
 }
-
         function updateOperationAccountOptions() {
             // 更新操作選單中的帳戶選項
             const accountSelect = document.getElementById('operation-account');
@@ -350,56 +374,65 @@ function updateTransactionLog() {
             updateOperationAccountOptions(); // 更新操作選單
         }
 
-        function performOperation() {
-            const selectedAccount = operationAccount.value;
-            const operationType = document.getElementById('operation-type').value;
-            const amount = parseFloat(document.getElementById('operation-amount').value);
+function performOperation() {
+    const selectedAccount = operationAccount.value;
+    const operationType = document.getElementById('operation-type').value;
+    const amount = parseFloat(document.getElementById('operation-amount').value);
+    const operationDateInput = document.getElementById('operation-date').value;
+    const operationDate = operationDateInput 
+        ? operationDateInput // 如果有輸入日期，直接使用
+        : new Date().toISOString().split('T')[0]; // 沒有輸入日期時，使用當天日期 (格式 YYYY-MM-DD)
 
-            if (selectedAccount && operationType && !isNaN(amount)) {
-                const account = accounts.find(acc => `${acc.type}-${acc.name}` === selectedAccount);
+    if (selectedAccount && operationType && !isNaN(amount)) {
+        const account = accounts.find(acc => `${acc.type}-${acc.name}` === selectedAccount);
 
-                if (account) {
-                    if (operationType === 'income') {
-                        account.balance += amount;
-                        account.transactions.push({ type: '收入', amount });
-                    } else if (operationType === 'expense') {
-                        account.balance -= amount;
-                        account.transactions.push({ type: '支出', amount: -amount }); // 支出以負數記錄
-                    } else if (operationType === 'transfer') {
-                        if (account.freeTransfers > 0) {
-                            account.freeTransfers -= 1;
-                            account.balance -= amount;
-                            account.transactions.push({ type: '轉帳', amount: -amount }); // 轉帳以負數記錄
-                        } else {
-                            alert('轉帳次數已用盡！');
-                            return;
-                        }
-                    }
-                    updateAccountInfo();
-                    updateTransactionLog();
-                    updateOperationAccountOptions(); // 更新帳戶選單
-                    alert(`操作成功！目前餘額為 ${account.balance}`);
+        if (account) {
+            if (operationType === 'income') {
+                account.balance += amount;
+                account.transactions.push({ type: '收入', amount, date: operationDate });
+            } else if (operationType === 'expense') {
+                account.balance -= amount;
+                account.transactions.push({ type: '支出', amount: -amount, date: operationDate });
+            } else if (operationType === 'transfer') {
+                if (account.freeTransfers > 0) {
+                    account.freeTransfers -= 1;
+                    account.balance -= amount;
+                    account.transactions.push({ type: '轉帳', amount: -amount, date: operationDate });
+                } else {
+                    alert('轉帳次數已用盡！');
+                    return;
                 }
-            } else {
-                alert('請選擇帳戶、操作類型並輸入有效金額。');
             }
+            updateAccountInfo();
+            updateTransactionLog();
+            updateOperationAccountOptions(); // 更新帳戶選單
+            alert(`操作成功！目前餘額為 ${account.balance}`);
         }
+    } else {
+        alert('請選擇帳戶、操作類型並輸入有效金額。');
+    }
+}
+function editTransaction(accountId, transactionIndex) {
+    const [type, name] = accountId.split('-');
+    const account = accounts.find(acc => acc.type === type && acc.name === name);
+    const transaction = account.transactions[transactionIndex];
 
-        function editTransaction(accountId, transactionIndex) {
-            const [type, name] = accountId.split('-');
-            const account = accounts.find(acc => acc.type === type && acc.name === name);
-            const transaction = account.transactions[transactionIndex];
+    const newAmount = parseFloat(prompt('請輸入新的金額:', transaction.amount));
+    const newDate = prompt('請輸入新的日期 (格式: YYYY-MM-DD):', transaction.date);
 
-            const newAmount = parseFloat(prompt('請輸入新的金額:', transaction.amount));
-            if (!isNaN(newAmount)) {
-                const amountDifference = newAmount - transaction.amount;
-                transaction.amount = newAmount;
-                account.balance += amountDifference; // 根據修改金額調整帳戶餘額
-                updateAccountInfo();
-                updateTransactionLog();
-            }
-        }
+    if (!isNaN(newAmount) && newDate) {
+        const amountDifference = newAmount - transaction.amount;
+        transaction.amount = newAmount;
+        transaction.date = newDate;
 
+        // 根據修改金額調整帳戶餘額
+        account.balance += amountDifference;
+        updateAccountInfo();
+        updateTransactionLog();
+    } else {
+        alert('請輸入有效金額和日期。');
+    }
+}
         function deleteTransaction(accountId, transactionIndex) {
             const [type, name] = accountId.split('-');
             const account = accounts.find(acc => acc.type === type && acc.name === name);
